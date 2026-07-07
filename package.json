@@ -2,10 +2,10 @@
   "name": "nexo-messenger",
   "version": "1.0.0",
   "description": "Nexo — self-hosted realtime messenger (Node.js + Express + SQLite + WebSocket)",
-  "main": "server/index.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node server/index.js"
+    "start": "node index.js",
+    "dev": "node index.js"
   },
   "dependencies": {
     "express": "^4.19.2",
