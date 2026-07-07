@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nexo</title>
+<style>
+  :root{
+    --bg: #0d0f12;
+    --surface: #161920;
+    --surface-raised: #1e222b;
+    --surface-hover: #232833;
+    --border: #262b35;
+    --accent: #5b8cff;
+    --accent-dim: #3f68c9;
+    --text: #eef0f4;
+    --text-muted: #8a90a0;
+    --text-faint: #565c6b;
+    --danger: #e5606a;
+    --online: #4fd17a;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --shadow-soft: 0 4px 16px rgba(0,0,0,0.28);
+    --shadow-tiny: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  [data-theme="light"]{
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-raised: #f0f1f4;
+    --surface-hover: #e7e9ee;
+    --border: #e1e3e8;
+    --text: #1b1e24;
+    --text-muted: #6b7180;
+    --text-faint: #9ba1af;
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body{
+    margin:0; padding:0; height:100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overscroll-behavior: none;
+  }
+  #app{
+    max-width: 480px;
+    margin: 0 auto;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  button{ font-family: inherit; }
+  input, textarea, select{ font-family: inherit; }
+
+  .screen{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    background: var(--bg);
+    transform: translateX(0);
+    transition: transform .22s ease;
+  }
+  .screen.hidden{ display:none; }
+  .icon-btn{
+    width:38px; height:38px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius: 50%;
+    background: transparent;
+    border:none; color: var(--text);
+    cursor:pointer;
+  }
+  .icon-btn:active{ background: var(--surface-hover); }
+  svg{ width:22px; height:22px; stroke: currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+  .avatar{
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; color:#fff; flex-shrink:0;
+    background-size:cover; background-position:center;
+  }
+
+  /* AUTH */
+  #authScreen{ justify-content:center; align-items:center; padding: 32px 28px; }
+  .auth-wrap{ width:100%; max-width:340px; display:flex; flex-direction:column; align-items:center; }
+  .auth-logo{
+    width:64px; height:64px; border-radius:20px;
+    background: linear-gradient(145deg, var(--accent), var(--accent-dim));
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:14px;
+    box-shadow: var(--shadow-soft);
+  }
+  .auth-logo svg{ width:32px; height:32px; stroke:#fff; }
+  .auth-title{ font-size:22px; font-weight:700; margin-bottom:4px; }
+  .auth-sub{ font-size:14px; color:var(--text-muted); margin-bottom:26px; text-align:center; }
+  .field{
+    width:100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 13px 15px;
+    color: var(--text);
+    font-size: 15px;
+    margin-bottom:10px;
+    outline:none;
+  }
+  .field:focus{ border-color: var(--accent); }
+  .field::placeholder{ color: var(--text-faint); }
+  .btn-primary{
+    width:100%;
+    background: var(--accent);
+    color:#fff; border:none;
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-size:15px; font-weight:600;
+    margin-top:8px;
+    cursor:pointer;
+  }
+  .btn-primary:disabled{ opacity:.6; }
+  .btn-primary:active{ background: var(--accent-dim); }
+  .auth-switch{
+    margin-top:16px; font-size:13.5px; color: var(--text-muted);
+    text-align:center;
+  }
+  .auth-switch a{ color: var(--accent); text-decoration:none; font-weight:600; cursor:pointer; }
+  .auth-extra-fields{ display:flex; flex-direction:column; width:100%; }
+  .auth-error{ color: var(--danger); font-size:13px; margin: -2px 0 10px; text-align:center; min-height:16px; }
+
+  /* TOP BAR */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 14px;
+    flex-shrink:0;
+  }
+  .topbar-title{ font-size:18px; font-weight:700; }
+  .topbar-actions{ display:flex; gap:2px; }
+
+  .search-wrap{ padding: 0 14px 10px; flex-shrink:0; }
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background: var(--surface);
+    border-radius: var(--radius-md);
+    padding: 9px 13px;
+  }
+  .search-box svg{ width:18px; height:18px; color: var(--text-muted); flex-shrink:0; }
+  .search-box input{
+    background:none; border:none; outline:none; color:var(--text);
+    font-size:14.5px; width:100%;
+  }
+  .search-box input::placeholder{ color: var(--text-faint); }
+
+  /* CHAT LIST */
+  .list-scroll{ flex:1; overflow-y:auto; padding-bottom: 8px; }
+  .chat-row{
+    display:flex; align-items:center; gap:12px;
+    padding: 10px 14px;
+    cursor:pointer;
+    position:relative;
+  }
+  .chat-row:active{ background: var(--surface-hover); }
+  .chat-row .avatar{ width:52px; height:52px; font-size:19px; }
+  .chat-row-body{ flex:1; min-width:0; }
+  .chat-row-top{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .chat-name{ font-size:15.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px; }
+  .chat-time{ font-size:12px; color: var(--text-faint); flex-shrink:0; }
+  .chat-row-bottom{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:2px; }
+  .chat-last{ font-size:13.5px; color: var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .badge{
+    min-width:20px; height:20px; padding:0 6px;
+    background: var(--accent); color:#fff;
+    border-radius:10px; font-size:11.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .pin-icon{ width:13px; height:13px; color:var(--text-faint); flex-shrink:0; }
+
+  /* BOTTOM NAV */
+  .bottom-nav{
+    display:flex; justify-content:space-around; align-items:center;
+    padding: 6px 6px calc(env(safe-area-inset-bottom, 0px) + 6px);
+    background: var(--surface);
+    border-top:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .nav-item{
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    color: var(--text-faint);
+    background:none; border:none;
+    padding:6px 14px; border-radius:12px;
+    cursor:pointer;
+  }
+  .nav-item svg{ width:23px; height:23px; }
+  .nav-item span{ font-size:10.5px; font-weight:500; }
+  .nav-item.active{ color: var(--accent); }
+
+  /* DIALOG */
+  .dialog-topbar{
+    display:flex; align-items:center; gap:10px;
+    padding: 8px 10px;
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .dialog-topbar .avatar{ width:38px; height:38px; font-size:14px; }
+  .dialog-id{ flex:1; min-width:0; display:flex; flex-direction:column; cursor:pointer; }
+  .dialog-name{ font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dialog-status{ font-size:12px; color: var(--text-muted); }
+  .dialog-status.online{ color: var(--online); }
+  .dialog-actions{ display:flex; }
+
+  .messages-scroll{
+    flex:1; overflow-y:auto;
+    padding: 14px 12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .msg-row{ display:flex; }
+  .msg-row.out{ justify-content:flex-end; }
+  .msg-row.in{ justify-content:flex-start; }
+  .bubble{
+    max-width: 76%;
+    padding: 8px 12px 7px;
+    border-radius: 16px;
+    font-size: var(--chat-font-size, 14.5px);
+    line-height:1.35;
+    position:relative;
+    box-shadow: var(--shadow-tiny);
+    word-break: break-word;
+  }
+  .msg-row.in .bubble{
+    background: var(--surface-raised);
+    border-bottom-left-radius:5px;
+  }
+  .msg-row.out .bubble{
+    background: var(--accent);
+    color:#fff;
+    border-bottom-right-radius:5px;
+  }
+  .bubble-time{
+    font-size:10.5px; opacity:.65; float:right; margin: 4px 0 -2px 8px;
+  }
+  .media-card{
+    max-width:220px; border-radius:16px; overflow:hidden; box-shadow: var(--shadow-tiny); cursor:pointer;
+  }
+  .media-card img{ width:100%; display:block; }
+  .sticker-msg{ font-size:64px; line-height:1; background:none !important; box-shadow:none !important; padding:0 !important; }
+  .file-card{
+    display:flex; align-items:center; gap:10px; background: var(--surface-raised); padding:10px 14px; border-radius:14px; max-width:220px;
+  }
+  .file-card svg{ width:22px; height:22px; color: var(--accent); flex-shrink:0; }
+  .file-card span{ font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .typing-indicator{ font-size:12px; color: var(--text-muted); padding: 0 4px; font-style: italic; }
+
+  .composer{
+    flex-shrink:0;
+    border-top:1px solid var(--border);
+    background: var(--surface);
+    padding: 8px 8px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  .composer-row{ display:flex; align-items:flex-end; gap:6px; }
+  .composer-row .icon-btn{ flex-shrink:0; }
+  .composer-input-wrap{
+    flex:1;
+    background: var(--surface-raised);
+    border-radius: 20px;
+    display:flex; align-items:center;
+    padding: 4px 6px 4px 14px;
+    min-height:38px;
+  }
+  .composer-input-wrap textarea{
+    flex:1; background:none; border:none; outline:none; color:var(--text);
+    resize:none; font-size:14.5px; max-height:100px; padding:6px 0; line-height:1.3;
+  }
+  .composer-input-wrap textarea::placeholder{ color: var(--text-faint); }
+  .send-btn{
+    width:38px; height:38px; border-radius:50%; border:none;
+    background: var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; cursor:pointer;
+  }
+  .send-btn:active{ background: var(--accent-dim); }
+  .quick-row{
+    display:flex; gap:6px; padding: 6px 4px 2px;
+    overflow-x:auto;
+  }
+  .quick-btn{
+    display:flex; align-items:center; gap:5px;
+    background: var(--surface-raised); border:none; color: var(--text-muted);
+    padding: 7px 12px; border-radius: 16px; font-size:12.5px; font-weight:600;
+    flex-shrink:0; cursor:pointer;
+  }
+  .quick-btn svg{ width:15px; height:15px; }
+  .quick-btn.active{ color: var(--accent); }
+
+  /* STICKER/GIF PANEL */
+  .panel-sheet{
+    height: 260px;
+    border-top:1px solid var(--border);
+    background: var(--surface);
+    display:flex; flex-direction:column;
+    flex-shrink:0;
+  }
+  .panel-tabs{ display:flex; gap:4px; padding:8px 10px 4px; }
+  .panel-grid{
+    flex:1; overflow-y:auto;
+    display:grid; grid-template-columns: repeat(4, 1fr);
+    gap:10px; padding: 10px 12px;
+  }
+  .sticker-item{
+    aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+    font-size:34px; background: var(--surface-raised); border-radius:14px; cursor:pointer;
+    border:none;
+  }
+  .sticker-item:active{ background: var(--surface-hover); }
+  .gif-item{
+    aspect-ratio:1; border-radius:14px; overflow:hidden; cursor:pointer; border:none; padding:0; position:relative;
+  }
+  .gif-item img{ width:100%; height:100%; object-fit:cover; }
+  .gif-item .del-x{
+    position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%;
+    background:rgba(0,0,0,.6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px;
+  }
+  .add-gallery-tile{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: var(--surface-raised); border-radius:14px; color: var(--accent);
+    aspect-ratio:1; gap:4px; cursor:pointer; border:none;
+  }
+  .add-gallery-tile svg{ width:22px; height:22px; }
+  .add-gallery-tile span{ font-size:10px; font-weight:600; }
+
+  /* PROFILE */
+  .profile-header{
+    display:flex; flex-direction:column; align-items:center;
+    padding: 28px 20px 18px;
+  }
+  .profile-avatar-wrap{ position:relative; margin-bottom:12px; }
+  .profile-avatar-wrap .avatar{ width:96px; height:96px; font-size:34px; }
+  .edit-fab{
+    position:absolute; bottom:0; right:0;
+    width:30px; height:30px; border-radius:50%;
+    background: var(--accent); border:2px solid var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .edit-fab svg{ width:15px; height:15px; stroke:#fff; }
+  .profile-name{ font-size:19px; font-weight:700; }
+  .profile-username{ font-size:13.5px; color: var(--accent); margin-top:2px; }
+  .profile-bio{ font-size:13px; color: var(--text-muted); margin-top:6px; text-align:center; padding: 0 20px; }
+
+  .profile-actions{ display:flex; gap:8px; padding: 4px 16px 16px; }
+  .action-btn{
+    flex:1; background: var(--surface); border:none; color: var(--text);
+    padding:11px 8px; border-radius: var(--radius-md); font-size:13px; font-weight:600;
+    display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer;
+  }
+  .action-btn svg{ width:19px; height:19px; color: var(--accent); }
+  .action-btn:active{ background: var(--surface-hover); }
+
+  .info-list{ padding: 0 16px; }
+  .info-card{
+    background: var(--surface); border-radius: var(--radius-md);
+    overflow:hidden; margin-bottom:14px;
+  }
+  .info-row{
+    display:flex; flex-direction:column; gap:1px;
+    padding: 11px 15px;
+    border-bottom:1px solid var(--border);
+  }
+  .info-row:last-child{ border-bottom:none; }
+  .info-label{ font-size:11.5px; color: var(--text-muted); }
+  .info-value{ font-size:14.5px; }
+
+  /* SETTINGS */
+  .settings-list{ padding: 4px 16px 20px; }
+  .settings-group{
+    background: var(--surface); border-radius: var(--radius-md);
+    overflow:hidden; margin-bottom:16px;
+  }
+  .settings-row{
+    display:flex; align-items:center; gap:13px;
+    padding: 12px 14px;
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+  }
+  .settings-row:last-child{ border-bottom:none; }
+  .settings-row:active{ background: var(--surface-hover); }
+  .settings-icon{
+    width:34px; height:34px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; color:#fff;
+  }
+  .settings-icon svg{ width:18px; height:18px; }
+  .settings-text{ flex:1; min-width:0; }
+  .settings-title{ font-size:14.5px; font-weight:500; }
+  .settings-desc{ font-size:12px; color: var(--text-muted); margin-top:1px; }
+  .chev{ width:16px; height:16px; color: var(--text-faint); flex-shrink:0; }
+
+  /* toggle switch */
+  .switch{ position:relative; width:44px; height:26px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch-track{
+    position:absolute; inset:0; background: var(--border); border-radius:14px; transition:.2s; cursor:pointer;
+  }
+  .switch-track::before{
+    content:''; position:absolute; width:20px; height:20px; left:3px; top:3px;
+    background:#fff; border-radius:50%; transition:.2s;
+  }
+  .switch input:checked + .switch-track{ background: var(--accent); }
+  .switch input:checked + .switch-track::before{ transform: translateX(18px); }
+
+  .settings-detail{ padding: 4px 16px 20px; }
+  .settings-detail .settings-row{ cursor:default; }
+  .settings-detail select, .settings-detail input[type=range]{ width: 100%; }
+  .radio-row{ display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-bottom:1px solid var(--border); }
+  .radio-row:last-child{ border-bottom:none; }
+  .radio-row input{ width:18px; height:18px; accent-color: var(--accent); }
+  .back-row{ display:flex; align-items:center; gap:10px; padding: 6px 16px 10px; }
+  .back-row .topbar-title{ flex:1; }
+  .danger-btn{ color: var(--danger); }
+  .color-swatch-row{ display:flex; gap:10px; padding:14px; flex-wrap:wrap; }
+  .color-swatch{ width:32px; height:32px; border-radius:50%; border:2px solid transparent; cursor:pointer; }
+  .color-swatch.active{ border-color:#fff; }
+  .session-row{ display:flex; flex-direction:column; gap:2px; padding:12px 14px; border-bottom:1px solid var(--border); }
+  .session-row:last-child{ border-bottom:none; }
+  .session-meta{ font-size:11.5px; color: var(--text-muted); }
+
+  /* CONTACTS */
+  .section-label{ font-size:12px; color: var(--text-faint); font-weight:700; padding: 12px 16px 4px; letter-spacing:.03em; }
+  .contact-row{ display:flex; align-items:center; gap:12px; padding:9px 16px; cursor:pointer; }
+  .contact-row:active{ background: var(--surface-hover); }
+  .contact-row .avatar{ width:44px; height:44px; font-size:16px; }
+  .contact-name{ font-size:14.5px; font-weight:600; }
+  .contact-sub{ font-size:12px; color: var(--text-muted); }
+  .contact-remove{ margin-left:auto; color: var(--text-faint); }
+
+  /* MODAL / GALLERY */
+  .modal-overlay{
+    position:absolute; inset:0; background: rgba(0,0,0,0.55);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index: 50;
+  }
+  .modal-overlay.hidden{ display:none; }
+  .modal-sheet{
+    width:100%; max-width:480px; background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 18px 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
+    max-height:75%; overflow-y:auto;
+  }
+  .modal-handle{ width:36px; height:4px; background: var(--border); border-radius:2px; margin: 0 auto 14px; }
+  .modal-title{ font-size:16px; font-weight:700; margin-bottom:12px; }
+  .gallery-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:6px; }
+  .gallery-cell{
+    aspect-ratio:1; border-radius:10px; overflow:hidden; cursor:pointer; border:none; padding:0; position:relative;
+  }
+  .gallery-cell img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .gallery-empty{ grid-column:1/-1; text-align:center; color:var(--text-faint); font-size:13px; padding:30px 0; }
+  .modal-save-row{ display:flex; gap:8px; margin-top:14px; }
+  .modal-save-row button{
+    flex:1; padding:10px; border-radius:12px; border:none; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .btn-secondary{ background: var(--surface-raised); color: var(--text); }
+  .btn-accent{ background: var(--accent); color:#fff; }
+  .btn-danger{ background: var(--danger); color:#fff; }
+
+  .file-input-hidden{ display:none; }
+
+  .toast{
+    position:absolute; bottom:90px; left:50%; transform: translateX(-50%);
+    background: var(--surface-raised); color: var(--text);
+    padding:10px 18px; border-radius: 14px; font-size:13px;
+    box-shadow: var(--shadow-soft); z-index:80;
+    opacity:0; pointer-events:none; transition: opacity .2s ease, transform .2s ease;
+    max-width: 80%; text-align:center;
+  }
+  .toast.show{ opacity:1; }
+
+  .empty-state{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color: var(--text-faint); gap:8px; padding:30px; text-align:center;
+  }
+  .empty-state svg{ width:40px; height:40px; opacity:.5; }
+  .empty-state span{ font-size:13.5px; }
+
+  .spinner{
+    width:22px; height:22px; border:2.5px solid var(--border); border-top-color: var(--accent);
+    border-radius:50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  .center-loader{ flex:1; display:flex; align-items:center; justify-content:center; }
+
+  ::-webkit-scrollbar{ width:0; height:0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ AUTH SCREEN ============ -->
+  <div class="screen" id="authScreen">
+    <div class="auth-wrap">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5H4l1.5-4A8.38 8.38 0 1 1 21 11.5z"/></svg>
+      </div>
+      <div class="auth-title">Nexo</div>
+      <div class="auth-sub" id="authSub">Войдите, чтобы продолжить</div>
+
+      <div class="auth-extra-fields" id="registerFields" style="display:none;">
+        <input class="field" id="regNickname" placeholder="Имя">
+        <input class="field" id="regUsername" placeholder="Username (латиница)">
+      </div>
+      <input class="field" id="authLogin" placeholder="Логин">
+      <input class="field" id="authPassword" placeholder="Пароль" type="password">
+      <div class="auth-error" id="authError"></div>
+
+      <button class="btn-primary" id="authSubmit">Войти</button>
+      <div class="auth-switch" id="authSwitch">Нет аккаунта? <a id="toRegister">Зарегистрироваться</a></div>
+    </div>
+  </div>
+
+  <!-- ============ CHATS SCREEN ============ -->
+  <div class="screen hidden" id="chatsScreen">
+    <div class="topbar">
+      <button class="icon-btn" id="openProfileFromChats">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+      </button>
+      <div class="topbar-title">Чаты</div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="chatsSearchBtn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+        <button class="icon-btn" id="newChatBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="chatSearchInput" placeholder="Поиск">
+      </div>
+    </div>
+    <div class="list-scroll" id="chatList"></div>
+    <div class="bottom-nav" id="bottomNav">
+      <button class="nav-item active" data-screen="chatsScreen">
+        <svg viewBox="0 0 24 24"><path d="M21 12c0 4-4 7-9 7-1.2 0-2.3-.15-3.4-.44L3 20l1.6-4.1C3.6 14.7 3 13.4 3 12c0-4 4-7 9-7s9 3 9 7z"/></svg>
+        <span>Чаты</span>
+      </button>
+      <button class="nav-item" data-screen="contactsScreen">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.6.3 4.5 2.2 4.5 5.3"/></svg>
+        <span>Контакты</span>
+      </button>
+      <button class="nav-item" data-screen="settingsScreen">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6v-.2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg>
+        <span>Настройки</span>
+      </button>
+      <button class="nav-item" data-screen="profileScreen">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <span>Профиль</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ NEW CHAT MODAL ============ -->
+  <div class="modal-overlay hidden" id="newChatModal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Новый чат</div>
+      <div class="search-box" style="margin-bottom:10px;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="userSearchInput" placeholder="Введите @username или имя">
+      </div>
+      <div id="userSearchResults"></div>
+      <div class="modal-save-row">
+        <button class="btn-secondary" id="newChatCancel">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DIALOG SCREEN ============ -->
+  <div class="screen hidden" id="dialogScreen">
+    <div class="dialog-topbar">
+      <button class="icon-btn" id="dialogBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="avatar" id="dialogAvatar" style="width:38px;height:38px;font-size:14px;"></div>
+      <div class="dialog-id">
+        <div class="dialog-name" id="dialogName"></div>
+        <div class="dialog-status" id="dialogStatus"></div>
+      </div>
+      <div class="dialog-actions"></div>
+    </div>
+
+    <div class="messages-scroll" id="messagesScroll"></div>
+    <div class="typing-indicator hidden" id="typingIndicator">печатает…</div>
+
+    <div class="panel-sheet hidden" id="stickerPanel">
+      <div class="panel-tabs">
+        <button class="quick-btn active" data-tab="stickers">Стикеры</button>
+        <button class="quick-btn" data-tab="gifs">GIF</button>
+      </div>
+      <div class="panel-grid" id="panelGrid"></div>
+    </div>
+
+    <div class="composer">
+      <div class="quick-row">
+        <button class="quick-btn" id="openGalleryQuick">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Фото
+        </button>
+        <button class="quick-btn" id="toggleStickerPanel">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><circle cx="9" cy="9.5" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="9.5" r="1" fill="currentColor" stroke="none"/></svg>
+          Стикеры
+        </button>
+        <button class="quick-btn" id="toggleGifPanel">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 9v6M14 9h2.5a1.5 1.5 0 0 1 0 3H14v3M20 9v6"/></svg>
+          GIF
+        </button>
+        <button class="quick-btn" id="attachFileQuick">
+          <svg viewBox="0 0 24 24"><path d="M21.4 11.5l-8.5 8.5a5 5 0 0 1-7-7l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.4 8.4a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/></svg>
+          Файл
+        </button>
+      </div>
+      <div class="composer-row">
+        <div class="composer-input-wrap">
+          <textarea id="messageInput" placeholder="Сообщение" rows="1"></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn">
+          <svg viewBox="0 0 24 24" style="stroke:#fff;"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONTACTS SCREEN ============ -->
+  <div class="screen hidden" id="contactsScreen">
+    <div class="topbar"><div class="topbar-title">Контакты</div>
+      <button class="icon-btn" id="addContactBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="contactsSearchInput" placeholder="Поиск контактов">
+      </div>
+    </div>
+    <div class="list-scroll" id="contactsList"></div>
+  </div>
+
+  <!-- ============ SETTINGS SCREEN (main list) ============ -->
+  <div class="screen hidden" id="settingsScreen">
+    <div class="topbar"><div class="topbar-title">Настройки</div><div></div></div>
+    <div class="list-scroll">
+      <div class="settings-list" id="settingsList"></div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS DETAIL SCREEN (generic) ============ -->
+  <div class="screen hidden" id="settingsDetailScreen">
+    <div class="back-row">
+      <button class="icon-btn" id="settingsDetailBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="topbar-title" id="settingsDetailTitle">Раздел</div>
+    </div>
+    <div class="list-scroll">
+      <div class="settings-detail" id="settingsDetailContent"></div>
+    </div>
+  </div>
+
+  <!-- ============ PROFILE SCREEN ============ -->
+  <div class="screen hidden" id="profileScreen">
+    <div class="topbar"><div></div><div class="topbar-title">Профиль</div>
+      <button class="icon-btn" id="profileToSettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6v-.2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg></button>
+    </div>
+    <div class="list-scroll">
+      <div class="profile-header">
+        <div class="profile-avatar-wrap">
+          <div class="avatar" id="profileAvatar" style="width:96px;height:96px;font-size:34px;"></div>
+          <div class="edit-fab" id="editAvatarBtn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
+        </div>
+        <div class="profile-name" id="profileName"></div>
+        <div class="profile-username" id="profileUsername"></div>
+        <div class="profile-bio" id="profileBio">Пара слов о себе</div>
+      </div>
+      <div class="profile-actions">
+        <button class="action-btn" id="choosePhotoBtn">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Фото
+        </button>
+        <button class="action-btn" id="editProfileBtn">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+          Изменить
+        </button>
+        <button class="action-btn" data-screen="settingsScreen">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9"/></svg>
+          Настройки
+        </button>
+      </div>
+      <div class="info-list">
+        <div class="info-card">
+          <div class="info-row"><div class="info-label">Логин</div><div class="info-value" id="infoLogin"></div></div>
+          <div class="info-row"><div class="info-label">Username</div><div class="info-value" id="infoUsername"></div></div>
+          <div class="info-row"><div class="info-label">Имя</div><div class="info-value" id="infoNickname"></div></div>
+          <div class="info-row"><div class="info-label">О себе</div><div class="info-value" id="infoBio"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EDIT PROFILE MODAL ============ -->
+  <div class="modal-overlay hidden" id="editProfileModal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Изменить профиль</div>
+      <input class="field" id="editNickname" placeholder="Имя">
+      <input class="field" id="editUsername" placeholder="Username">
+      <input class="field" id="editBio" placeholder="О себе">
+      <div class="auth-error" id="editProfileError"></div>
+      <div class="modal-save-row">
+        <button class="btn-secondary" id="editProfileCancel">Отмена</button>
+        <button class="btn-accent" id="editProfileSave">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GALLERY / UPLOAD MODAL ============ -->
+  <div class="modal-overlay hidden" id="galleryModal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="galleryTitle">Изображение</div>
+      <div style="text-align:center; padding: 10px 0 4px;">
+        <div class="spinner" style="display:none; margin: 0 auto;" id="galleryLoading"></div>
+      </div>
+      <div class="modal-save-row">
+        <button class="btn-secondary" id="galleryCancel">Отмена</button>
+        <button class="btn-accent" id="galleryUploadBtn">Выбрать файл</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SAVE-AS MODAL ============ -->
+  <div class="modal-overlay hidden" id="saveAsModal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Отправить как</div>
+      <div style="display:flex; justify-content:center; margin-bottom:14px;">
+        <div class="media-card" id="saveAsPreviewWrap" style="max-width:160px;"><img id="saveAsPreview" style="width:100%;"></div>
+      </div>
+      <div class="modal-save-row">
+        <button class="btn-secondary" id="sendAsPhoto">Отправить фото</button>
+      </div>
+      <div class="modal-save-row">
+        <button class="btn-secondary" id="saveAsSticker">Сохранить как стикер</button>
+        <button class="btn-secondary" id="saveAsGif">Сохранить как GIF</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInputAvatar" accept="image/*" class="file-input-hidden">
+  <input type="file" id="fileInputChatMedia" accept="image/*" class="file-input-hidden">
+  <input type="file" id="fileInputChatFile" class="file-input-hidden">
+  <input type="file" id="fileInputSticker" accept="image/*" class="file-input-hidden">
+  <div class="toast" id="toast"></div>
+  <div class="center-loader hidden" id="globalLoader"><div class="spinner"></div></div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

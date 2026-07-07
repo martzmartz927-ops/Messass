@@ -1,0 +1,10 @@
+node_modules/
+.env
+server/db/*.sqlite3
+server/db/*.sqlite3-*
+server/uploads/avatars/*
+server/uploads/media/*
+server/uploads/stickers/*
+!server/uploads/avatars/.gitkeep
+!server/uploads/media/.gitkeep
+!server/uploads/stickers/.gitkeep
